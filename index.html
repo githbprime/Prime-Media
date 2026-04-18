@@ -7,24 +7,32 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        body { background-color: #0F171E; color: white; overflow-x: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        /* Strict overflow control to prevent the off-screen issue */
+        html, body { 
+            background-color: #0F171E; 
+            color: white; 
+            overflow-x: hidden; 
+            width: 100%; 
+            max-width: 100%; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+        }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         
         /* YouTube Cinematic Scaling for Backgrounds */
         .yt-hero-frame {
-            width: 100vw; height: 56.25vw; 
+            width: 100%; height: 56.25vw; 
             min-height: 100vh; min-width: 177.77vh;
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(1.35);
             pointer-events: none;
         }
 
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; transform: scale(0.98); }
     </style>
 </head>
 <body>
-    <div id="app">
+    <div id="app" class="w-full overflow-hidden">
         <nav class="flex items-center justify-between px-10 py-4 fixed w-full z-[60] transition-colors duration-300" 
              :class="{'bg-[#0F171E]': isScrolled, 'bg-gradient-to-b from-black/80 to-transparent': !isScrolled}">
             <div class="flex items-center gap-10">
@@ -35,7 +43,7 @@
                     <button @click="activeTab = 'TV Shows'" :class="{'text-white font-bold': activeTab === 'TV Shows'}">TV Shows</button>
                 </div>
             </div>
-            <input v-model="searchTerm" type="text" placeholder="Search..." class="bg-[#1A242F] border border-[#33373D] rounded px-4 py-1.5 w-64 focus:outline-none focus:border-[#00A8E1] text-sm">
+            <input v-model="searchTerm" type="text" placeholder="Search..." class="bg-[#1A242F] border border-[#33373D] rounded px-4 py-1.5 w-64 focus:outline-none focus:border-[#00A8E1] text-sm hidden md:block">
         </nav>
 
         <div v-if="!searchTerm && activeTab === 'All'" class="relative h-[85vh] w-full bg-black overflow-hidden">
@@ -49,20 +57,20 @@
             <div class="absolute inset-0 bg-gradient-to-r from-[#0F171E] via-[#0F171E]/40 to-transparent"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-[#0F171E] via-transparent to-transparent"></div>
 
-            <div class="relative z-10 px-12 flex flex-col justify-center h-full max-w-2xl">
-                <h1 class="text-7xl font-black italic mb-4 drop-shadow-2xl">{{ movies[0].title }}</h1>
-                <p class="text-xl text-gray-200 mb-8 leading-relaxed drop-shadow-md">{{ movies[0].description }}</p>
-                <div class="flex items-center gap-4">
+            <div class="relative z-10 px-10 md:px-16 flex flex-col justify-center h-full max-w-3xl">
+                <h1 class="text-6xl md:text-7xl font-black italic mb-4 drop-shadow-2xl">{{ movies[0].title }}</h1>
+                <p class="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed drop-shadow-md">{{ movies[0].description }}</p>
+                <div class="flex flex-wrap items-center gap-4">
                     <button @click="playFullMovie(movies[0])" class="bg-[#00A8E1] px-12 py-3 rounded font-bold text-lg hover:bg-[#008dbd] transition shadow-lg">▶ Play Now</button>
                     <button @click="selectedMovie = movies[0]" class="bg-gray-500/30 hover:bg-gray-500/50 px-6 py-3 rounded font-bold text-lg backdrop-blur-md">Details</button>
-                    <button @click="heroMuted = !heroMuted" class="ml-4 bg-white/10 p-3 rounded-full hover:bg-white/20 transition">
+                    <button @click="heroMuted = !heroMuted" class="ml-2 bg-white/10 p-3 rounded-full hover:bg-white/20 transition">
                         {{ heroMuted ? '🔇' : '🔊' }}
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="px-12 py-12 relative z-10" :class="{'mt-0': searchTerm}">
+        <div class="px-10 md:px-16 py-12 relative z-10 w-full" :class="{'mt-0': searchTerm}">
             <h3 class="text-xl font-bold mb-6 text-gray-100">{{ searchTerm ? 'Search Results' : 'Recommended for you' }}</h3>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                 <div v-for="movie in filteredMovies" :key="movie.id" @click="selectedMovie = movie" class="group cursor-pointer">
@@ -75,32 +83,30 @@
         </div>
 
         <transition name="fade">
-            <div v-if="selectedMovie" class="fixed inset-0 z-[100] bg-[#0F171E] flex flex-col overflow-y-auto">
-                <button @click="selectedMovie = null" class="absolute top-8 right-12 z-[110] text-4xl text-white/50 hover:text-white transition">✕</button>
+            <div v-if="selectedMovie" class="fixed inset-0 z-[100] bg-[#0F171E] overflow-y-auto overflow-x-hidden w-full h-full">
+                <button @click="selectedMovie = null" class="absolute top-6 right-8 md:top-8 md:right-12 z-[110] text-4xl text-white/50 hover:text-white transition">✕</button>
 
-                <div class="relative w-full h-[65vh] flex-shrink-0 bg-black pointer-events-none">
-                    <iframe v-if="!playingMovie && !playingTrailer" class="absolute inset-0 w-full h-full scale-125"
-                        :src="`https://www.youtube.com/embed/${selectedMovie.youtubeId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0`"
-                        frameborder="0" allow="autoplay; encrypted-media"></iframe>
+                <div class="relative w-full h-[50vh] md:h-[65vh] flex-shrink-0 bg-black">
+                    <img :src="selectedMovie.thumbnail" class="absolute inset-0 w-full h-full object-cover opacity-60">
                     <div class="absolute inset-0 bg-gradient-to-t from-[#0F171E] via-[#0F171E]/50 to-transparent"></div>
-                    <div class="absolute inset-0 bg-gradient-to-r from-[#0F171E] via-transparent to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#0F171E] via-[#0F171E]/20 to-transparent"></div>
                 </div>
 
-                <div class="px-20 py-10 max-w-4xl relative z-10 -mt-32">
-                    <h2 class="text-6xl font-black italic mb-6">{{ selectedMovie.title }}</h2>
-                    <div class="flex items-center gap-6 text-gray-400 mb-8 font-bold">
+                <div class="px-8 md:px-20 pb-20 max-w-5xl relative z-10 -mt-24 md:-mt-32">
+                    <h2 class="text-5xl md:text-6xl font-black italic mb-6 drop-shadow-xl">{{ selectedMovie.title }}</h2>
+                    <div class="flex flex-wrap items-center gap-4 md:gap-6 text-gray-400 mb-8 font-bold text-sm md:text-base">
                         <span class="text-[#00A8E1]">98% Match</span>
                         <span>2014</span>
-                        <span class="border border-gray-600 px-2 py-0.5 text-xs">13+</span>
+                        <span class="border border-gray-600 px-2 py-0.5 text-xs text-white">13+</span>
                         <span>2h 49m</span>
                     </div>
-                    <p class="text-xl text-gray-300 leading-relaxed mb-10 w-3/4">{{ selectedMovie.description }}</p>
+                    <p class="text-lg md:text-xl text-gray-300 leading-relaxed mb-10 md:w-3/4">{{ selectedMovie.description }}</p>
                     
-                    <div class="flex flex-col gap-4 w-1/2">
-                        <button @click="playFullMovie(selectedMovie)" class="w-full text-center bg-white text-black px-6 py-4 rounded font-black text-xl hover:bg-gray-200 transition shadow-lg">
+                    <div class="flex flex-col gap-4 w-full md:w-[450px]">
+                        <button @click="playFullMovie(selectedMovie)" class="w-full flex justify-center items-center bg-white text-black px-6 py-4 rounded font-black text-xl hover:bg-gray-200 transition shadow-lg">
                             ▶ WATCH NOW
                         </button>
-                        <button @click="playTrailerFullScreen(selectedMovie)" class="w-full text-center bg-gray-700/60 text-white px-6 py-4 rounded font-black text-xl hover:bg-gray-600 transition backdrop-blur-md">
+                        <button @click="playTrailerFullScreen(selectedMovie)" class="w-full flex justify-center items-center bg-gray-700/60 text-white px-6 py-4 rounded font-black text-xl hover:bg-gray-600 transition backdrop-blur-md border border-gray-500/30">
                             🎬 WATCH TRAILER
                         </button>
                     </div>
@@ -108,13 +114,13 @@
             </div>
         </transition>
 
-        <div v-if="playingMovie || playingTrailer" class="fixed inset-0 bg-black z-[200] flex flex-col">
-            <div class="absolute top-10 left-10 z-[210] flex items-center gap-6">
-                <button @click="closePlayer" class="bg-black/50 p-4 rounded-full text-2xl hover:bg-white hover:text-black transition">✕</button>
-                <h2 class="text-2xl font-bold">{{ playingMovie ? playingMovie.title : playingTrailer.title + ' (Trailer)' }}</h2>
+        <div v-if="playingMovie || playingTrailer" class="fixed inset-0 bg-black z-[200] flex flex-col w-full h-full">
+            <div class="absolute top-6 left-6 md:top-10 md:left-10 z-[210] flex items-center gap-6">
+                <button @click="closePlayer" class="bg-black/60 backdrop-blur-sm p-3 md:p-4 rounded-full text-xl md:text-2xl hover:bg-white hover:text-black transition">✕</button>
+                <h2 class="text-xl md:text-2xl font-bold drop-shadow-md">{{ playingMovie ? playingMovie.title : playingTrailer.title + ' (Trailer)' }}</h2>
             </div>
             
-            <video v-if="playingMovie" ref="videoRef" :src="playingMovie.videoUrl" controls autoplay class="w-full h-full"></video>
+            <video v-if="playingMovie" ref="videoRef" :src="playingMovie.videoUrl" controls autoplay class="w-full h-full object-contain"></video>
             
             <iframe v-if="playingTrailer" class="w-full h-full" 
                 :src="`https://www.youtube.com/embed/${playingTrailer.youtubeId}?autoplay=1&mute=0&controls=1&rel=0`" 
@@ -132,7 +138,7 @@
                 const activeTab = ref("All");
                 const selectedMovie = ref(null);
                 const playingMovie = ref(null);
-                const playingTrailer = ref(null); // New state for full-screen trailers
+                const playingTrailer = ref(null);
                 const heroReady = ref(false);
                 const heroMuted = ref(true);
                 const isScrolled = ref(false);
@@ -158,7 +164,6 @@
                     });
                 });
 
-                // Plays local file
                 const playFullMovie = (movie) => {
                     playingMovie.value = movie;
                     setTimeout(() => {
@@ -167,12 +172,8 @@
                     }, 300);
                 };
 
-                // Plays YouTube embed in full-screen player
-                const playTrailerFullScreen = (movie) => {
-                    playingTrailer.value = movie;
-                };
+                const playTrailerFullScreen = (movie) => { playingTrailer.value = movie; };
 
-                // Universal close function
                 const closePlayer = () => {
                     if (playingMovie.value && videoRef.value) {
                         localStorage.setItem(`time-${playingMovie.value.id}`, videoRef.value.currentTime);
@@ -187,7 +188,7 @@
                     selectedMovie.value = null;
                 };
 
-                const handleScroll = () => { isScrolled.value = window.scrollY > 50; };
+                const handleScroll = () => { isScrolled.value = window.scrollY > 20; };
 
                 onMounted(() => {
                     setTimeout(() => heroReady.value = true, 3000);
