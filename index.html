@@ -1,0 +1,163 @@
+import React, { useState, useEffect, useRef } from 'react';
+import data from './data.json'; 
+
+export default function PrimeClone() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [category, setCategory] = useState("All");
+  const [selectedMovie, setSelectedMovie] = useState(null); // For the Submenu
+  const [playingMovie, setPlayingMovie] = useState(null);   // For the Fullscreen Player
+
+  // 1. Filter Logic
+  const filteredMovies = data.filter(m => {
+    const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCat = category === "All" || m.category === category;
+    return matchesSearch && matchesCat;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#0F171E] text-white font-sans selection:bg-primeBlue">
+      {/* --- NAVIGATION --- */}
+      <nav className="flex items-center justify-between px-10 py-4 sticky top-0 z-50 bg-[#0F171E]">
+        <div className="flex items-center gap-10">
+          <h1 className="text-primeBlue text-3xl font-bold tracking-tighter">prime video</h1>
+          <div className="flex gap-6 text-gray-400 font-medium">
+            {["All", "Movies", "TV Shows"].map(cat => (
+              <button 
+                key={cat} 
+                onClick={() => setCategory(cat)}
+                className={`hover:text-white transition ${category === cat ? "text-white border-b-2 border-white" : ""}`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+        <input 
+          type="text" 
+          placeholder="Search..." 
+          className="bg-[#1A242F] border border-[#33373D] rounded px-4 py-1 w-64 focus:outline-none focus:border-primeBlue"
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </nav>
+
+      {/* --- HERO SECTION --- */}
+      {!searchTerm && <HeroSection movie={data[0]} onPlay={setPlayingMovie} />}
+
+      {/* --- MOVIE ROWS --- */}
+      <div className="px-10 py-8 space-y-10">
+        <MovieRow 
+          title="Recently Added" 
+          items={filteredMovies} 
+          onSelect={setSelectedMovie} 
+          activeId={selectedMovie?.id}
+        />
+      </div>
+
+      {/* --- SUBMENU (Prime Accordion) --- */}
+      {selectedMovie && (
+        <div className="bg-[#1A242F] w-full p-10 flex gap-10 animate-in fade-in slide-in-from-top-4">
+          <div className="w-1/2 aspect-video bg-black rounded shadow-2xl overflow-hidden">
+             <video src={selectedMovie.trailerUrl} autoPlay muted loop className="w-full h-full object-cover" />
+          </div>
+          <div className="w-1/2">
+            <h2 className="text-5xl font-bold mb-4">{selectedMovie.title}</h2>
+            <p className="text-gray-400 text-lg mb-6 leading-relaxed">{selectedMovie.description}</p>
+            <button 
+              onClick={() => setPlayingMovie(selectedMovie)}
+              className="bg-white text-black px-12 py-3 rounded font-bold hover:bg-gray-200 transition"
+            >
+              Play
+            </button>
+            <button onClick={() => setSelectedMovie(null)} className="ml-4 text-gray-500">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* --- FULLSCREEN PLAYER --- */}
+      {playingMovie && (
+        <Player 
+          movie={playingMovie} 
+          onClose={() => setPlayingMovie(null)} 
+        />
+      )}
+    </div>
+  );
+}
+
+// --- FULLSCREEN PLAYER COMPONENT ---
+function Player({ movie, onClose }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    // Resume from Cache
+    const saved = localStorage.getItem(`time-${movie.id}`);
+    if (saved && videoRef.current) videoRef.current.currentTime = saved;
+
+    // Save to Cache every 5 seconds
+    const interval = setInterval(() => {
+      if (videoRef.current) localStorage.setItem(`time-${movie.id}`, videoRef.current.currentTime);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [movie.id]);
+
+  return (
+    <div className="fixed inset-0 bg-black z-[100] flex flex-col">
+      <button onClick={onClose} className="absolute top-10 left-10 z-10 text-2xl font-bold opacity-50 hover:opacity-100">✕ Back</button>
+      <video 
+        ref={videoRef}
+        src={movie.videoUrl} 
+        controls 
+        autoPlay 
+        className="w-full h-full"
+      />
+    </div>
+  );
+}
+
+// --- HERO SECTION COMPONENT ---
+function HeroSection({ movie, onPlay }) {
+  const [showTrailer, setShowTrailer] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowTrailer(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="relative h-[70vh] w-full">
+      <div className="absolute inset-0">
+        {showTrailer ? (
+          <video src={movie.trailerUrl} autoPlay muted loop className="w-full h-full object-cover" />
+        ) : (
+          <img src={movie.banner} className="w-full h-full object-cover" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0F171E] via-transparent to-transparent" />
+      </div>
+      <div className="relative z-10 px-10 flex flex-col justify-center h-full max-w-2xl">
+        <h1 className="text-6xl font-black italic mb-4">{movie.title}</h1>
+        <p className="text-xl text-gray-300 mb-8">{movie.description}</p>
+        <button onClick={() => onPlay(movie)} className="bg-primeBlue w-fit px-10 py-3 rounded font-bold text-lg">Play Now</button>
+      </div>
+    </div>
+  );
+}
+
+function MovieRow({ title, items, onSelect, activeId }) {
+    return (
+        <div className="space-y-4">
+            <h3 className="text-xl font-bold text-gray-200">{title}</h3>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {items.map(m => (
+                    <div 
+                        key={m.id}
+                        onClick={() => onSelect(m)}
+                        className={`min-w-[280px] aspect-video rounded cursor-pointer transition-transform hover:scale-105 ${activeId === m.id ? 'ring-4 ring-primeBlue' : ''}`}
+                    >
+                        <img src={m.thumbnail} className="w-full h-full object-cover rounded" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
