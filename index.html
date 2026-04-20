@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prime Video Clone</title>
+    <title>Prime Media</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -43,7 +43,7 @@
         <nav class="flex items-center justify-between px-10 py-4 fixed w-full z-[60] transition-colors duration-300" 
              :class="{'bg-[#0F171E]': isScrolled, 'bg-gradient-to-b from-black/80 to-transparent': !isScrolled}">
             <div class="flex items-center gap-10">
-                <h1 class="text-[#00A8E1] text-2xl font-bold tracking-tighter cursor-pointer" @click="resetView">prime video</h1>
+                <h1 class="text-[#00A8E1] text-2xl font-bold tracking-tighter cursor-pointer" @click="resetView">prime media</h1>
                 <div class="flex gap-6 text-gray-300 font-medium text-sm">
                     <button @click="activeTab = 'All'" :class="{'text-white font-bold': activeTab === 'All'}">All</button>
                     <button @click="activeTab = 'Movies'" :class="{'text-white font-bold': activeTab === 'Movies'}">Movies</button>
